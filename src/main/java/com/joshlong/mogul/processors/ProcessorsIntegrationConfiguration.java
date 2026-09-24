@@ -30,17 +30,16 @@ class ProcessorsIntegrationConfiguration {
 
     private static final String PROCESSOR_REQUEST_ID_HEADER = "processor-request-id";
 
-
     @Bean
     ProcessorRequestHandler processorRequestHandler(
             Map<String, Processor> processorsInBeanFactory,
             @Qualifier(PROCESSOR_REPLIES) MessageChannel replies) {
         return new ProcessorRequestHandler(processorsInBeanFactory, processorResponse -> {
-            var prm = MessageBuilder
-                    .withPayload(processorResponse)
-                    .setHeader(PROCESSOR_REQUEST_ID_HEADER, processorResponse.correlationId())
-                    .setHeader(PROCESSOR_ID_HEADER, processorResponse.processorId())
-                    .build();
+            var prm = MessageBuilder //
+                    .withPayload(processorResponse) //
+                    .setHeader(PROCESSOR_REQUEST_ID_HEADER, processorResponse.correlationId()) //
+                    .setHeader(PROCESSOR_ID_HEADER, processorResponse.processorId()) //
+                    .build(); //
             replies.send(prm);
         });
     }
@@ -60,7 +59,9 @@ class ProcessorsIntegrationConfiguration {
             AmqpTemplate template,
             JsonMapper jsonMapper,
             @Qualifier(PROCESSOR_REPLIES) MessageChannel channel) {
-        var amqpOutboundAdapter = Amqp.outboundAdapter(template).routingKey(PROCESSOR_REPLIES);
+        var amqpOutboundAdapter = Amqp //
+                .outboundAdapter(template) //
+                .routingKey(PROCESSOR_REPLIES);
         return IntegrationFlow//
                 .from(channel)//
                 .transform(ProcessorResponse.class, jsonMapper::writeValueAsString) //
@@ -72,7 +73,6 @@ class ProcessorsIntegrationConfiguration {
     IntegrationFlow inboundIntegrationFlow(
             JsonMapper jsonMapper,//
             ConnectionFactory connectionFactory,//
-            AmqpTemplate template, //
             JobRequestScheduler scheduler //
     ) {
         var amqpInboundAdapter = Amqp.inboundAdapter(connectionFactory, PROCESSOR_REQUESTS);
