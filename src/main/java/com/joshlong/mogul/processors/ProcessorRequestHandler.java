@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.util.Assert;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -14,10 +15,11 @@ import java.util.function.Consumer;
  * request to JobRunr, and JobRunr hands it back here, on a background job server thread
  * whose pool size is what bounds how many {@code ffmpeg} and {@code magick} subprocesses
  * this node will fork at once.
+ * <p>
+ * if this throws, or the node dies mid-job, no reply is sent -- and a client that assumes
+ * nothing is done until it hears that it is has exactly the right answer.
  */
 public class ProcessorRequestHandler implements JobRequestHandler<ProcessorRequest> {
-
-	public static final String EXCEPTION = "exception";
 
 	private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -38,22 +40,26 @@ public class ProcessorRequestHandler implements JobRequestHandler<ProcessorReque
 		this.log.info("found processor [{}]. invoking [{}] for request [{}]", processorId,
 				processor.getClass().getName(), jobRequest.correlationId());
 		try {
-			// only what the processor produced goes back on the wire. the client already
-			// knows what it sent, and it has the correlationId with which to look it up.
 			var result = processor.process(jobRequest);
-			this.reply(jobRequest, true, result == null ? Map.of() : result);
+			this.reply(jobRequest, true, null, result);
 		} //
 		catch (Throwable throwable) {
 			this.log.error("error processing job request [{}]", jobRequest, throwable);
-			this.reply(jobRequest, false, Map.of(EXCEPTION, this.exceptionMessage(throwable)));
+			this.reply(jobRequest, false, this.errorMessage(throwable), Map.of());
 		}
 	}
 
-	private void reply(ProcessorRequest request, boolean success, Map<String, Object> context) {
-		this.replies.accept(new ProcessorResponse(request.processorId(), request.correlationId(), success, context));
+	private void reply(ProcessorRequest request, boolean success, String error, Map<String, Object> result) {
+		// the request comes home with the reply, so the client doesn't have to have kept
+		// anything. what the processor produced goes on top of it.
+		var context = new HashMap<>(request.context());
+		if (result != null)
+			context.putAll(result);
+		this.replies
+			.accept(new ProcessorResponse(request.processorId(), request.correlationId(), success, error, context));
 	}
 
-	private String exceptionMessage(Throwable e) {
+	private String errorMessage(Throwable e) {
 		var rootCause = NestedExceptionUtils.getRootCause(e);
 		var message = rootCause != null ? rootCause.getMessage() : e.getMessage();
 		return message == null ? e.getClass().getName() : message;
