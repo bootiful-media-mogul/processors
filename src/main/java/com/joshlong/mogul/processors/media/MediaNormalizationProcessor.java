@@ -13,7 +13,6 @@ import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 
@@ -74,17 +73,30 @@ class MediaNormalizationProcessor implements Processor {
 		var encoder = (Encoder<? extends EncodedFile>) (image ? this.imageEncoder : this.audioEncoder);
 		var outputContentType = image ? JPEG : MPEG;
 
-		// ffmpeg and magick both decide what they're looking at partly from the
-		// extension, so the local copy keeps the name the mogul uploaded under.
-		var local = FileUtils.tempFile("normalization-" + request.correlationId(), extensionFor(inputFilename));
-		var ephemera = new HashSet<File>();
-		ephemera.add(local);
+		// one directory per job, and everything -- the download, the encode, and any
+		// intermediate a tool decides to leave lying around -- happens inside it. the
+		// encoders write their output as a sibling of their input, so they land in here
+		// without knowing it exists, and the whole thing goes at the end.
+		//
+		// tracking the files individually is what this replaces, and it was already
+		// wrong: converting a png to jpeg leaves a full-size intermediate that nothing
+		// named, so every non-jpeg upload stranded one on disk until the pod restarted.
+		// ephemeral storage is the tightest budget this workload has -- Autopilot caps it
+		// at 10Gi -- and a leak in it is measured in evictions.
+		//
+		// it is named for the correlation id, which is already a uuid, so it needs no
+		// temp file of its own to find a free name with.
+		var workspace = new File(System.getProperty("java.io.tmpdir"), "normalization-" + request.correlationId());
+		Assert.state(workspace.isDirectory() || workspace.mkdirs(),
+				() -> "could not create the workspace [" + workspace + "]");
 		try {
+			// ffmpeg and magick both decide what they're looking at partly from the
+			// extension, so the local copy keeps the name the mogul uploaded under.
+			var local = new File(workspace, "input" + extensionFor(inputFilename));
 			this.storage.read(inputBucket, inputKey, local);
 			this.log.info("normalizing [{}/{}] ({}) into [{}/{}] ({})", inputBucket, inputKey, inputContentType,
 					outputBucket, outputKey, outputContentType);
 			var encoded = encoder.encode(local);
-			ephemera.add(encoded.file());
 			this.storage.write(outputBucket, outputKey, encoded.file(), MediaType.parseMediaType(outputContentType));
 			var response = new HashMap<String, Object>(encoded.context());
 			response.put(MediaNormalization.OUTPUT_CONTENT_TYPE, outputContentType);
@@ -92,9 +104,11 @@ class MediaNormalizationProcessor implements Processor {
 			return response;
 		} //
 		finally {
-			for (var f : ephemera)
-				if (FileUtils.delete(f))
-					this.log.debug("deleted [{}] after media normalization", f.getAbsolutePath());
+			if (FileUtils.delete(workspace))
+				this.log.debug("deleted the workspace [{}] after media normalization", workspace.getAbsolutePath());
+			else
+				this.log.warn("could not delete the workspace [{}]; this node will leak disk until it restarts",
+						workspace.getAbsolutePath());
 		}
 	}
 
