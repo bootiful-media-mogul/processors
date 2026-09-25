@@ -17,9 +17,6 @@ import java.util.function.Consumer;
  */
 public class ProcessorRequestHandler implements JobRequestHandler<ProcessorRequest> {
 
-	/**
-	 * the key under which a failed request reports why it failed.
-	 */
 	public static final String EXCEPTION = "exception";
 
 	private final Logger log = LoggerFactory.getLogger(getClass());

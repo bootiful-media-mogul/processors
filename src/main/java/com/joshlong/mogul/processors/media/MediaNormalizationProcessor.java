@@ -2,10 +2,11 @@ package com.joshlong.mogul.processors.media;
 
 import com.joshlong.mogul.processors.Processor;
 import com.joshlong.mogul.processors.ProcessorRequest;
-import com.joshlong.mogul.processors.Storage;
+import com.joshlong.mogul.storage.Storage;
 import com.joshlong.mogul.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -79,12 +80,12 @@ class MediaNormalizationProcessor implements Processor {
 		var ephemera = new HashSet<File>();
 		ephemera.add(local);
 		try {
-			this.storage.download(inputBucket, inputKey, local);
+			this.storage.read(inputBucket, inputKey, local);
 			this.log.info("normalizing [{}/{}] ({}) into [{}/{}] ({})", inputBucket, inputKey, inputContentType,
 					outputBucket, outputKey, outputContentType);
 			var encoded = encoder.encode(local);
 			ephemera.add(encoded.file());
-			this.storage.upload(outputBucket, outputKey, encoded.file(), outputContentType);
+			this.storage.write(outputBucket, outputKey, encoded.file(), MediaType.parseMediaType(outputContentType));
 			var response = new HashMap<String, Object>(encoded.context());
 			response.put(MediaNormalization.OUTPUT_CONTENT_TYPE, outputContentType);
 			response.put(MediaNormalization.OUTPUT_SIZE, encoded.file().length());
