@@ -88,6 +88,11 @@
             <artifactId>spring-integration-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.joshlong.mogul</groupId>
+            <artifactId>jobrunr</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>
