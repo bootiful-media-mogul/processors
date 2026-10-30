@@ -20,6 +20,13 @@ abstract class MediaNormalization {
 
 	static final String OUTPUT_KEY = "outputKey";
 
+	/**
+	 * optional. the parts of the input to keep, in the order they should play, as
+	 * {@code start-end} pairs in milliseconds separated by commas:
+	 * {@code 0-30000,60000-234960}. absent or empty means keep all of it.
+	 */
+	static final String KEPT_RANGES = "keptRanges";
+
 	// what we send back
 	static final String OUTPUT_CONTENT_TYPE = "outputContentType";
 

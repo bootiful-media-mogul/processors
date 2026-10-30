@@ -65,6 +65,7 @@ class MediaNormalizationProcessor implements Processor {
 		var outputKey = this.required(context, MediaNormalization.OUTPUT_KEY);
 		var inputContentType = this.required(context, MediaNormalization.INPUT_CONTENT_TYPE);
 		var inputFilename = (String) context.get(MediaNormalization.INPUT_FILENAME);
+		var kept = KeptRange.parse((String) context.get(MediaNormalization.KEPT_RANGES));
 
 		// the content type is the only thing that decides which tool runs. anything that
 		// isn't an image is treated as audio, which is what the api did before this
@@ -96,7 +97,10 @@ class MediaNormalizationProcessor implements Processor {
 			this.storage.read(inputBucket, inputKey, local);
 			this.log.info("normalizing [{}/{}] ({}) into [{}/{}] ({})", inputBucket, inputKey, inputContentType,
 					outputBucket, outputKey, outputContentType);
-			var encoded = encoder.encode(local);
+			// only audio can be cut. an image with kept ranges is a confused request, and
+			// quietly ignoring them would hide that.
+			Assert.state(kept.isEmpty() || !image, "an image can't have kept ranges");
+			var encoded = image ? encoder.encode(local) : this.audioEncoder.encode(local, kept);
 			this.storage.write(outputBucket, outputKey, encoded.file(), MediaType.parseMediaType(outputContentType));
 			var response = new HashMap<String, Object>(encoded.context());
 			response.put(MediaNormalization.OUTPUT_CONTENT_TYPE, outputContentType);
