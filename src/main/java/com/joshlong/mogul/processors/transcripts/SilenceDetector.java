@@ -15,13 +15,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-abstract class SilenceDetector {
+public abstract class SilenceDetector {
 
 	private static final Map<String, Pattern> PATTERNS = new ConcurrentHashMap<>();
 
 	private static final Logger log = LoggerFactory.getLogger(SilenceDetector.class);
 
-	static Silence[] detect(File audio) throws Exception {
+	public static Silence[] detect(File audio) throws Exception {
 		log.debug("detecting silence in the file [{}]", audio.getAbsolutePath());
 		var silence = new File(audio.getParentFile(), "silence");
 		var result = new ProcessBuilder()

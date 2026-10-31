@@ -81,7 +81,7 @@ class AudioEncoder implements Encoder<AudioEncodedFile> {
 
 	// apparently this can fail. so we will wrap it in excessive exception handling: a
 	// missing duration is a cosmetic loss, not a reason to fail the whole normalization.
-	private long durationInMilliseconds(String file) {
+	long durationInMilliseconds(String file) {
 		try {
 			var pb = new ProcessBuilder("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
 					file)
