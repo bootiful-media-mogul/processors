@@ -3,7 +3,7 @@ package com.joshlong.mogul.processors.media;
 import com.joshlong.mogul.processors.Processor;
 import com.joshlong.mogul.processors.ProcessorRequest;
 import com.joshlong.mogul.storage.Storage;
-import com.joshlong.mogul.utils.FileUtils;
+import com.joshlong.mogul.utils.*;
 import com.joshlong.mogul.utils.ProcessUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ import java.util.Map;
 
 /**
  * draws the waveform the segment editor shows: one peak per twentieth of a second of the
- * input, in the small binary format {@link AudioWaveform} describes. the editor used to
+ * input, in the small binary format {@link AudioWaveform} describes. thea e editor used to
  * download and decode the whole file in the browser to get this, every time it opened.
  * <p>
  * like the other processors it knows nothing about segments or {@code ManagedFile}s:
