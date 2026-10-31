@@ -24,8 +24,8 @@ import java.util.Map;
 
 /**
  * draws the waveform the segment editor shows: one peak per twentieth of a second of the
- * input, in the small binary format {@link AudioWaveform} describes. thea e editor used to
- * download and decode the whole file in the browser to get this, every time it opened.
+ * input, in the small binary format {@link AudioWaveform} describes. thea e editor used
+ * to download and decode the whole file in the browser to get this, every time it opened.
  * <p>
  * like the other processors it knows nothing about segments or {@code ManagedFile}s:
  * audio comes in from one bucket and key, a waveform goes out to another.
